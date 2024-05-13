@@ -18,6 +18,12 @@ int colorPattern[7][3] = {
 
 int offPattern[] = {0, 0, 0};
 
+// Color selector variable
+int colorNow = 0;
+
+// LED display delay time
+int colorTime = 200;
+
 CRGB leds[NUM_LEDS];
 
 
@@ -29,13 +35,13 @@ void setup() {
 
 
 void loop() {
-  
+
   // On Sequence
   for (int i = 0; i < NUM_LEDS; i++){
 
-    leds[i] = CRGB(colorPattern[1][0], colorPattern[1][1], colorPattern[1][2]);
+    leds[i] = CRGB(colorPattern[colorNow][0], colorPattern[colorNow][1], colorPattern[colorNow][2]);
     FastLED.show();
-    delay(500); 
+    delay(colorTime); 
 
   }
 
@@ -44,8 +50,11 @@ void loop() {
 
     leds[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
     FastLED.show();
-    delay(500); 
+    delay(colorTime); 
 
   }
+
+  // Color selector increment
+  colorNow = (colorNow + 1) % 7;
 
 }
