@@ -48,7 +48,7 @@ int offPattern[] = {0, 0, 0};
 int timeNow = 0;
 
 // Color selector variable
-int colorNow = 5;
+int colorNow = 1;
 
 // Color time display variable
 int colorTime = 100;
@@ -64,6 +64,9 @@ unsigned int digitCount(unsigned int i);     // Counts the number of digits in a
 
 
 void setup() {
+
+  // Initialize serial comms
+  Serial.begin(115200);
   
   // Initialize FastLED
   FastLED.addLeds<WS2812, LED_PIN_1, GRB>(leds_1, NUM_LEDS);
@@ -74,17 +77,23 @@ void setup() {
 
 void loop() {
 
+  // Print time now
+  Serial.print(timeNow);
+  Serial.print(", ");
+
   // Count digits
   unsigned int digits = digitsCount(timeNow);
+  Serial.println(digits);
 
   // Loop through each digit
   // and turn on LEDs accordingly
-  if (digits = 1){
+  if (digits == 1){
 
-    // Reset display
+    // Reset displays
     for (int i = (NUM_LEDS - 1); i >= 0; i--){
 
       leds_1[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
+      leds_2[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
       FastLED.show();
 
     }
@@ -103,55 +112,40 @@ void loop() {
     }
 
   }
-  else{
+
+  if (digits == 2){
 
     // Splits digits through a loop
     char digitsArray[digits];
+    int temp = timeNow;
+
     while (digits--) {
-      digitsArray[digits] = (timeNow % 10);
-      timeNow /= 10;
+      digitsArray[digits] = (temp % 10);
+      temp /= 10;
     }
 
-    // Turn on both displays
-    // DISPLAY 1
-    // Reset display
+    // Reset displays
     for (int i = (NUM_LEDS - 1); i >= 0; i--){
 
       leds_1[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
-      FastLED.show();
-
-    }
-
-    for (int i = 0; i < NUM_LEDS; i++){
-
-      if (segmentPatterns[digitsArray[0]][i] == 1){
-
-        leds_1[i] = CRGB(colorPattern[colorNow][0], colorPattern[colorNow][1], colorPattern[colorNow][2]);
-        FastLED.show();
-        delay(colorTime); 
-
-      }
-
-    }
-
-    // DISPLAY 2
-    // Reset display
-    for (int i = (NUM_LEDS - 1); i >= 0; i--){
-
       leds_2[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
       FastLED.show();
 
     }
 
+    // Turn on both displays
     for (int i = 0; i < NUM_LEDS; i++){
 
       if (segmentPatterns[digitsArray[1]][i] == 1){
-
-        leds_2[i] = CRGB(colorPattern[colorNow][0], colorPattern[colorNow][1], colorPattern[colorNow][2]);
-        FastLED.show();
-        delay(colorTime); 
-
+        leds_1[i] = CRGB(colorPattern[colorNow][0], colorPattern[colorNow][1], colorPattern[colorNow][2]);
       }
+
+      if (segmentPatterns[digitsArray[0]][i] == 1){
+        leds_2[i] = CRGB(colorPattern[colorNow][0], colorPattern[colorNow][1], colorPattern[colorNow][2]);
+      }
+
+      FastLED.show();
+      delay(colorTime);
 
     }
 
@@ -159,6 +153,7 @@ void loop() {
   
   // Time increment
   timeNow = (timeNow + 1) % 24;
+  // timeNow = timeNow + 1;
   delay(colorTime*5); 
 
 }
