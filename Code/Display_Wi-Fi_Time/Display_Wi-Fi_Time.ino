@@ -1,3 +1,11 @@
+// Some code sources:
+// https://lastminuteengineers.com/esp32-ntp-server-date-time-tutorial/
+// // https://randomnerdtutorials.com/esp32-ntp-client-date-time-arduino-ide/
+// https://stackoverflow.com/questions/9302681/c-how-to-break-apart-a-multi-digit-number-into-separate-variables
+
+
+#include <WiFi.h>
+#include "time.h"
 #include <FastLED.h>
 
 
@@ -45,13 +53,29 @@ int offPattern[] = {0, 0, 0};
 
 
 // Time to display 
-int timeNow = 0;
+// int timeNow = 0;
 
 // Color selector variable
-int colorNow = 1;
+// int colorNow = 4;
 
 // Color time display variable
-int colorTime = 100;
+int colorTime = 20;
+
+const char* ssid     = "FILL-IN-SSID";
+const char* password = "FILL-IN-PASSWORD";
+
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = -18000;
+const int   daylightOffset_sec = 0;
+
+// Time info structure init
+struct tm timeinfo;
+
+
+// Function definitions
+unsigned int digitCount(unsigned int i);     // Counts the number of digits in a given number
+void printLocalTime(struct tm &timeinfo);
+void LEDDisplay(int timeNow);
 
 
 // Init LEDs
@@ -59,23 +83,91 @@ CRGB leds_1[NUM_LEDS];    // RIGHT LED (UNIT)
 CRGB leds_2[NUM_LEDS];    // LEFT LED (TENS)
 
 
-// Function definitions
-unsigned int digitCount(unsigned int i);     // Counts the number of digits in a given number
-
-
-void setup() {
-
-  // Initialize serial comms
+void setup()
+{
   Serial.begin(115200);
   
+  //connect to WiFi
+  Serial.printf("Connecting to %s ", ssid);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+  }
+
+  Serial.println("WI-FI CONNECTED");
+  
+  //init and get the time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  printLocalTime(timeinfo);
+
+  //disconnect WiFi as it's no longer needed
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+
   // Initialize FastLED
   FastLED.addLeds<WS2812, LED_PIN_1, GRB>(leds_1, NUM_LEDS);
   FastLED.addLeds<WS2812, LED_PIN_2, GRB>(leds_2, NUM_LEDS);
 
+  // Reset displays
+  for (int i = (NUM_LEDS - 1); i >= 0; i--){
+
+    leds_1[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
+    leds_2[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
+    FastLED.show();
+    delay(colorTime);
+
+  }
+  delay(5000);
+
 }
 
 
-void loop() {
+void loop(){
+
+  // delay(10000);
+  printLocalTime(timeinfo);
+
+  Serial.println(timeinfo.tm_hour);
+  Serial.println(timeinfo.tm_min);
+  Serial.println();
+
+  // Display hour
+  LEDDisplay(timeinfo.tm_hour, 3);
+  FastLED.show();
+  delay(5000); 
+
+  // Display minute
+  LEDDisplay(timeinfo.tm_min, 4);
+  FastLED.show();
+  delay(5000); 
+
+}
+
+
+unsigned int digitsCount(unsigned int i) {
+  
+  unsigned int ret=1;
+  while (i/=10) ret++;
+  
+  return ret;
+
+}
+
+
+void printLocalTime(struct tm &timeinfo){
+  
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+}
+
+
+void LEDDisplay(int timeNow, int colorNow){
 
   // Print time now
   Serial.print(timeNow);
@@ -94,7 +186,8 @@ void loop() {
 
       leds_1[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
       leds_2[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
-      FastLED.show();
+      // FastLED.show();
+      // delay(colorTime);
 
     }
     
@@ -104,9 +197,14 @@ void loop() {
       if (segmentPatterns[timeNow][i] == 1){
 
         leds_1[i] = CRGB(colorPattern[colorNow][0], colorPattern[colorNow][1], colorPattern[colorNow][2]);
-        FastLED.show();
+        // FastLED.show();
         delay(colorTime); 
 
+      }
+      if (segmentPatterns[0][i] == 1){
+        // Set second display to zero
+        leds_2[i] = CRGB(colorPattern[colorNow][0], colorPattern[colorNow][1], colorPattern[colorNow][2]);
+        delay(colorTime); 
       }
 
     }
@@ -129,7 +227,8 @@ void loop() {
 
       leds_1[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
       leds_2[i] = CRGB(offPattern[0], offPattern[1], offPattern[2]);
-      FastLED.show();
+      // FastLED.show();
+      // delay(colorTime);
 
     }
 
@@ -144,26 +243,11 @@ void loop() {
         leds_2[i] = CRGB(colorPattern[colorNow][0], colorPattern[colorNow][1], colorPattern[colorNow][2]);
       }
 
-      FastLED.show();
+      // FastLED.show();
       delay(colorTime);
 
     }
 
   }
-  
-  // Time increment
-  timeNow = (timeNow + 1) % 24;
-  // timeNow = timeNow + 1;
-  delay(colorTime*5); 
 
-}
-
-
-// Code from: 
-// https://stackoverflow.com/questions/9302681/c-how-to-break-apart-a-multi-digit-number-into-separate-variables
-unsigned int digitsCount(unsigned int i) {
-  
-  unsigned int ret=1;
-  while (i/=10) ret++;
-  return ret;
 }

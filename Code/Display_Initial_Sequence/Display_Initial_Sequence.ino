@@ -1,7 +1,7 @@
 #include <FastLED.h>
 
 
-#define LED_PIN     7
+#define LED_PIN     23
 #define NUM_LEDS    13
 
 int LEDPattern[LED_PIN] = {0, 2, 4, 6, 8, 10, 11};
